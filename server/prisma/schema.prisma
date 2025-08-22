@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  devices      Device[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  role         Role      @default(USER)
+  active       Boolean   @default(true) //agrege esta linea a mi tabla que comandos debo correr???
+  expiration   DateTime?
+}
+
+model Modules {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String
+  devices     Device[] // <- relación inversa
+}
+
+model Device {
+  id           Int             @id @default(autoincrement())
+  userId       Int
+  name         String
+  telephone    String?
+  deviceId     String          @unique
+  fcmToken     String?
+  lastIp       String?
+  osVersion    String?
+  appVersion   String?
+  batteryLevel Float?
+  isCharging   Boolean?
+  lastSeenAt   DateTime?
+  user         User            @relation(fields: [userId], references: [id])
+  locations    LocationLog[]
+  actions      ActionLog[]
+  streams      StreamSession[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  modules      Modules[]
+}
+
+model LocationLog {
+  id        Int      @id @default(autoincrement())
+  deviceId  Int
+  latitude  Float
+  longitude Float
+  accuracy  Float?
+  speed     Float?
+  timestamp DateTime
+  device    Device   @relation(fields: [deviceId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model ActionLog {
+  id          Int       @id @default(autoincrement())
+  deviceId    Int
+  actionType  String
+  requestedBy String
+  status      String
+  payload     Json?
+  executedAt  DateTime?
+  device      Device    @relation(fields: [deviceId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model StreamSession {
+  id            Int       @id @default(autoincrement())
+  deviceId      Int
+  type          String
+  startAt       DateTime
+  endAt         DateTime?
+  signalingData Json?
+  device        Device    @relation(fields: [deviceId], references: [id])
+  createdAt     DateTime  @default(now())
+}
+
+enum Role {
+  ADMIN
+  USER
+}
